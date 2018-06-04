@@ -1,0 +1,24 @@
+
+template_path: templates/common/asg.yaml
+
+parameters:
+    RegionCode: "euw1"
+    Environment: "prod"
+    ServerRole: "airflow"
+
+    Subnets: !stack_output airflow-vpc::PublicSubnets
+    InstanceType: t2.micro
+    InstanceRoles: 
+        - !stack_output airflow-iam::EC2InstanceRole
+    InstanceSGroupIds:
+        - !stack_output airflow-sgs::AirflowHostSG
+    KeyName: YourSshKeyPairName
+    AMIImageId: ami-d834aba1
+    MinSize: '3'
+    MaxSize: '9'
+    DesiredSize: '3'
+
+    #HostedZone: 605.tv.
+    ApplicationTG: !stack_output airflow-alb::ApplicationTG
+
+    AppName: "airflow"

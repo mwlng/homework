@@ -1,0 +1,14 @@
+
+template_path: templates/common/redisec.yaml
+
+parameters:
+    NodeType: cache.t2.micro
+    EngineType: redis
+    EngineVersion: 3.2.10
+    Subnets: 
+        - !stack_output airflow-vpc::PrivateSubnets
+    NumGroups: '3'
+    NumReplicas: '2'
+    ListenPort: '6379'
+    ReplicationGroupSGs:
+        - !stack_output airflow-sgs::AirflowRedisSG

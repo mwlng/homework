@@ -1,0 +1,6 @@
+
+template_path: templates/apps/airflow/sgs.yaml
+
+parameters:
+    Environment: "prod"
+    VPC: !stack_output airflow-vpc::VPC

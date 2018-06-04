@@ -1,0 +1,17 @@
+
+template_path: templates/regions/eu-west-1/vpc.yaml
+
+parameters:
+    Environment: "prod"
+
+    VpcCIDR: "10.100.0.0/16"
+
+    PublicSubnetCIDRs:
+        - "10.100.1.0/24"
+        - "10.100.2.0/24"
+        - "10.100.3.0/24"
+
+    PrivateSubnetCIDRs:
+        - "10.100.11.0/24"
+        - "10.100.12.0/24"
+        - "10.100.13.0/24"

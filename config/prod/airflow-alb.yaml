@@ -1,0 +1,16 @@
+
+template_path: templates/common/alb.yaml
+
+parameters:
+    RegionCode: "euw1"
+    Environment: "prod"
+
+    VPC: !stack_output airflow-vpc::VPC
+    Subnets: !stack_output airflow-vpc::PublicSubnets
+
+    HostedZone: 605.tv.
+    LoadBalancerSG: !stack_output airflow-sgs::AirflowLoadBalancerSG
+    DrainingTimeout: "30"
+
+    AppName: "airflow"
+

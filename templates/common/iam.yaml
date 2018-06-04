@@ -1,0 +1,44 @@
+Description: >
+    IAM roles
+
+Parameters:
+    Environment:
+        Description: Specify an environment
+        Type: String
+
+Resources:
+    EC2InstanceRole:
+        Type: AWS::IAM::Role
+        Properties:
+            Path: /
+            RoleName: !Sub ${Environment}-EC2InstanceRole
+            AssumeRolePolicyDocument:
+                Statement:
+                    - Action: "sts:AssumeRole"
+                      Effect: Allow
+                      Principal: { Service: ec2.amazonaws.com }
+            Policies:
+                - PolicyName: ec2-service
+                  PolicyDocument:
+                      Statement:
+                          Effect: Allow
+                          Action:
+                              - "ec2:DescribeInstances"
+                              - "ec2:DescribeTags"
+                              - "autoscaling:DescribeAutoScalingInstances"
+                          Resource: "*"
+                - PolicyName: cw-log-service
+                  PolicyDocument:
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - "logs:CreateLogGroup"
+                                - "logs:CreateLogStream"
+                                - "logs:PutLogEvents"
+                            Resource: "*"
+
+Outputs:
+    EC2InstanceRole:
+        Description: A reference to EC2 instance IAM role
+        Value: !Ref EC2InstanceRole
+

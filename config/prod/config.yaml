@@ -1,0 +1,8 @@
+
+---
+
+region: eu-west-1 
+#profile: sudo
+project_code: sceptre 
+template_bucket_name: sceptre-prod
+template_key_prefix: airflow

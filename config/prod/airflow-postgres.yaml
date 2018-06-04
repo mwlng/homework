@@ -1,0 +1,17 @@
+
+template_path: templates/common/postgres-rdsclus.yaml
+
+parameters:
+    FamilyName: aurora-postgresql9.6
+    DbInstanceType: db.r4.large
+    EngineType: aurora-postgresql 
+    EngineVersion: 9.6.6
+    ListenPort: "5432"
+    UserName: postgres
+    Password: ChangeIt!
+    BackupRetentionDays: '7'
+    TimeZone: US/Eastern 
+    Subnets: 
+        - !stack_output airflow-vpc::PrivateSubnets
+    DbClusterSGs:
+        - !stack_output airflow-sgs::AirflowPostgresSG

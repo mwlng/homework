@@ -1,0 +1,5 @@
+
+template_path: templates/common/iam.yaml
+
+parameters:
+    Environment: "prod"

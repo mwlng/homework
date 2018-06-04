@@ -1,0 +1,62 @@
+---
+# tasks file for airflow
+
+- name: Install build tools
+  yum:
+    name: "@Development tools"
+    state: present
+
+- name: Create airflow group
+  group:
+    name: airflow
+    state: present 
+
+- name: Create airflow user
+  user: 
+    name: airflow
+    state: present
+    group: airflow
+    home: /opt/airflow
+    createhome: yes
+
+- name: Copy init script to server
+  copy:
+    src: airflow
+    dest: /etc/init.d/airflow
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Install init script    
+  command: chkconfig --add airflow
+
+- name: Copy requirements.txt to server 
+  copy:
+    src: requirements.txt
+    dest: /opt/airflow/requirements.txt
+    owner: airflow
+    group: airflow
+    mode: 0644
+
+- name: Copy airflow.cfg to server 
+  template:
+    src: airflow.cfg.j2
+    dest: /opt/airflow/airflow.cfg
+    owner: airflow
+    group: airflow
+    mode: 0644
+
+- name: Install airflow and it's dependencies
+  command: pip install -r /opt/airflow/requirements.txt
+
+- name: Initialize airflow db
+  shell: /usr/local/bin/airflow initdb 
+  environment: "{{airflow_home}}"
+  become: yes
+  become_user: airflow
+  run_once: true
+  
+- name: Restart airflow
+  service:
+    name: airflow
+    state: restarted

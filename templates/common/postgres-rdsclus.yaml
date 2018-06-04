@@ -1,0 +1,117 @@
+Description: >
+    Aurora DB cluster 
+
+Parameters:
+    FamilyName:
+      Description: Specify parameter group family name
+      Type: String
+    DbInstanceType:
+      Description: Specify db instance type
+      Type: String
+    EngineType:
+      Description: Specify aurora engine type
+      Type: String
+    EngineVersion:
+      Description: Specify aurora engine version
+      Type: String
+    ListenPort:
+      Description: Specify cluster listening port
+      Type: String
+    UserName:
+      Description: Master user name
+      Type: String
+    Password:
+      Description: Master password
+      Type: String
+    BackupRetentionDays: 
+      Description: Backup retention days
+      Type: String
+    TimeZone:
+      Description: Time zone 
+      Type: String
+    Subnets:
+      Description: Which subnets this aurora cluster should be deployed to
+      Type: List<AWS::EC2::Subnet::Id>
+    DbClusterSGs:
+      Description: Aurora db cluster security groups
+      Type: List<AWS::EC2::SecurityGroup::Id>
+ 
+Resources:
+    RDSDBClusterParameterGroup:
+      Type: AWS::RDS::DBClusterParameterGroup
+      Properties:
+        Description: Aurora Cluster Parameter Group
+        Family: !Ref FamilyName
+        Parameters:
+          timezone: !Ref TimeZone
+
+    DBSubnetGroup: 
+      Type: "AWS::RDS::DBSubnetGroup"
+      Properties: 
+        DBSubnetGroupDescription: Aurora db cluster subnet group
+        SubnetIds: !Ref Subnets
+
+    RDSCluster:
+      Type: AWS::RDS::DBCluster
+      Properties:
+        MasterUsername: !Ref UserName
+        MasterUserPassword: !Ref Password
+        Engine: !Ref EngineType
+        EngineVersion: !Ref EngineVersion
+        Port: !Ref ListenPort
+        DBSubnetGroupName: !Ref DBSubnetGroup
+        DBClusterParameterGroupName:
+          Ref: RDSDBClusterParameterGroup
+        PreferredBackupWindow: 04:00-05:00
+        BackupRetentionPeriod: !Ref BackupRetentionDays
+        PreferredMaintenanceWindow: Sun:10:00-Sun:11:00
+        VpcSecurityGroupIds: !Ref DbClusterSGs
+
+    RDSDBParameterGroup:
+      Type: AWS::RDS::DBParameterGroup
+      Properties:
+        Description: Aurora DB Parameter Group
+        Family: !Ref FamilyName
+        Parameters:
+          max_connections: 250
+
+    RDSDBInstance1:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        DBSubnetGroupName:
+          Ref: DBSubnetGroup
+        DBParameterGroupName:
+          Ref: RDSDBParameterGroup
+        Engine: !Ref EngineType
+        DBClusterIdentifier:
+          Ref: RDSCluster
+        PubliclyAccessible: 'false'
+        DBInstanceClass: !Ref DbInstanceType
+        AutoMinorVersionUpgrade: 'true'
+ 
+
+    RDSDBInstance2:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        DBSubnetGroupName:
+          Ref: DBSubnetGroup
+        DBParameterGroupName:
+          Ref: RDSDBParameterGroup
+        Engine: !Ref EngineType
+        DBClusterIdentifier:
+          Ref: RDSCluster
+        PubliclyAccessible: 'false'
+        DBInstanceClass: !Ref DbInstanceType
+        AutoMinorVersionUpgrade: 'true'
+
+Outputs:
+    RDSCluster:
+      Description: A reference to RDS Aurora cluster 
+      Value: !Ref RDSCluster
+    RDSClusterEP:
+      Description: A reference to RDS Aurora Cluster endpoint
+      Value: !GetAtt RDSCluster.Endpoint.Address
+
+
+
+ 

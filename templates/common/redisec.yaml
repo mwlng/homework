@@ -1,0 +1,63 @@
+Description: >
+    Redis elastic cache cluster
+
+Parameters:
+    NodeType:
+      Description: Specify cache node type
+      Type: String
+    EngineType:
+      Description: Specify cache engine type
+      Type: String
+    EngineVersion:
+      Description: Specify cache engine version
+      Type: String
+    Subnets:
+      Description: Which subnets this replicaion group should be deployed to
+      Type: List<AWS::EC2::Subnet::Id>
+    NumGroups:
+      Description: Total number of node groups
+      Type: String
+    NumReplicas:
+      Description: Total number of replicas per node group
+      Type: String
+    ListenPort:
+      Description: Redis server listening port
+      Type: String
+    ReplicationGroupSGs:
+      Description: Replication group security groups
+      Type: List<AWS::EC2::SecurityGroup::Id> 
+
+Resources:
+    CacheSubnetGroup: 
+      Type: "AWS::ElastiCache::SubnetGroup"
+      Properties: 
+        Description: "Redis cache cluster subnet group"
+        SubnetIds:  !Ref Subnets
+    
+    RedisCacheReplicationGroup:
+      Type: AWS::ElastiCache::ReplicationGroup
+      Properties:
+        AutomaticFailoverEnabled: true
+        AutoMinorVersionUpgrade: true
+        CacheNodeType: !Ref NodeType 
+        CacheSubnetGroupName:
+          Ref: CacheSubnetGroup
+        Engine: !Ref EngineType 
+        EngineVersion: !Ref EngineVersion
+        NumNodeGroups: !Ref NumGroups
+        ReplicasPerNodeGroup: !Ref NumReplicas
+        Port: !Ref ListenPort
+        PreferredMaintenanceWindow: sun:10:00-sun:11:00
+        ReplicationGroupDescription: Redis cache replication group
+        SecurityGroupIds: !Ref ReplicationGroupSGs
+        SnapshotWindow: 05:00-06:00
+        SnapshotRetentionLimit: 7
+    
+Outputs:
+    RedisCacheRepGrp:
+      Description: A reference to redis cache replication group
+      Value: !Ref RedisCacheReplicationGroup
+    RedisCacheRepGrpConfigEP:
+      Description: A reference to redis cache replication group configuration endpoint
+      Value: !GetAtt RedisCacheReplicationGroup.ConfigurationEndPoint.Address
+

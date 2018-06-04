@@ -1,0 +1,102 @@
+Description: >
+    Autoscaling group 
+
+Parameters:
+    RegionCode:
+        Description: Specify a region code
+        Type: String
+    Environment:
+        Description: Specify an environment 
+        Type: String
+    InstanceType:
+        Description: EC2 instance type
+        Type: String
+    AMIImageId:
+        Description: EC2 image id
+        Type: String
+    KeyName:
+        Description: Select an existing EC2 KeyPair for SSH access to the instance
+        Type: AWS::EC2::KeyPair::KeyName
+    Subnets:
+        Description: Which subnets EC2 instance should be deployed to
+        Type: List<AWS::EC2::Subnet::Id>
+    InstanceSGroupIds:
+        Description: Select the security groups for the instance
+        Type: List<AWS::EC2::SecurityGroup::Id>
+    InstanceRoles:
+        Description: IAM role to use for this instance
+        Type: List<String>
+    MinSize:
+        Description: Specify minmum number of instances in ASG
+        Type: String
+    DesiredSize:
+        Description: Specify desired number of instances in ASG
+        Type: String
+    MaxSize:
+        Description: Specify maximum number of instances in ASG
+        Type: String
+    AppName:
+        Description: Specify a name of application 
+        Type: String
+    ServerRole:
+        Description: Specify a server role
+        Type: String
+    ApplicationTG:
+        Description: Specify a name of target group
+        Type: String
+       
+Resources:
+    AutoScalingGroup:
+        Type: AWS::AutoScaling::AutoScalingGroup
+        Properties:
+            VPCZoneIdentifier: !Ref Subnets
+            HealthCheckType: EC2
+            HealthCheckGracePeriod: 3
+            TargetGroupARNs:
+                - Ref: ApplicationTG 
+            LaunchConfigurationName: 
+                Ref: LaunchConfiguration
+            MinSize: !Ref MinSize 
+            MaxSize: !Ref MaxSize
+            DesiredCapacity: !Ref DesiredSize
+            Tags:
+                - Key: Name
+                  Value: !Sub ${RegionCode}-${Environment}--${AppName}-ASG
+                  PropagateAtLaunch: true
+                - Key: Environment
+                  Value: !Ref Environment 
+                  PropagateAtLaunch: true
+                - Key: Role
+                  Value: !Ref ServerRole 
+                  PropagateAtLaunch: true
+        CreationPolicy:
+            ResourceSignal:
+                Timeout: PT15M
+        UpdatePolicy:
+            AutoScalingRollingUpdate:
+                MinInstancesInService: 1
+                MaxBatchSize: 1
+                PauseTime: PT15M
+                WaitOnResourceSignals: true
+
+    InstanceProfile:
+        Type: AWS::IAM::InstanceProfile
+        Properties:
+            Path: /
+            Roles: !Ref InstanceRoles
+
+    LaunchConfiguration:
+        Type: AWS::AutoScaling::LaunchConfiguration
+        Properties:
+            ImageId: !Ref AMIImageId 
+            InstanceType: !Ref InstanceType
+            KeyName: !Ref KeyName
+            SecurityGroups: !Ref InstanceSGroupIds
+            IamInstanceProfile: !Ref InstanceProfile
+            UserData:
+                "Fn::Base64": 
+                    "Fn::Sub": |
+                        #!/bin/bash -xe
+                        yum install -y aws-cfn-bootstrap
+                        /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource AutoScalingGroup
+

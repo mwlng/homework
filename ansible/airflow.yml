@@ -1,0 +1,15 @@
+---
+ 
+
+- name: Deploy airflow 
+  hosts: all
+  remote_user: ec2-user
+  become: yes
+  gather_facts: no
+  roles:
+    - role: airflow
+      vars:
+         airflow_home:
+           AIRFLOW_HOME: /opt/airflow
+         pg_uri: "{{PG_URI}}"
+         redis_ep: "{{REDIS_CONFIG_EP}}"

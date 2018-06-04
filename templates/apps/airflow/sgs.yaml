@@ -1,0 +1,86 @@
+Description: >
+    Airflow security groups
+
+Parameters:
+    Environment:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+    VPC:
+        Type: AWS::EC2::VPC::Id
+        Description: Choose which VPC the security groups should be deployed to
+
+Resources:
+    AirflowLoadBalancerSG:
+        Type: AWS::EC2::SecurityGroup
+        Properties: 
+            VpcId: !Ref VPC
+            GroupDescription: Access to the load balancer that sits in front of hosts 
+            SecurityGroupIngress:
+                - CidrIp: 0.0.0.0/0
+                  IpProtocol: tcp
+                  FromPort: 80
+                  ToPort: 80 
+            Tags: 
+                - Key: Name
+                  Value: !Sub ${Environment}-airflow-loadbalancer-SG
+
+    AirflowHostSG:
+        Type: AWS::EC2::SecurityGroup
+        Properties: 
+            VpcId: !Ref VPC
+            GroupDescription: Access to the airflow hosts and the application that run on them
+            SecurityGroupIngress:
+                - SourceSecurityGroupId: !Ref AirflowLoadBalancerSG 
+                  IpProtocol: tcp
+                  FromPort: 8080
+                  ToPort: 8080
+                - CidrIp: 0.0.0.0/0 
+                  IpProtocol: tcp
+                  FromPort: 22
+                  ToPort: 22
+            Tags: 
+                - Key: Name
+                  Value: !Sub ${Environment}-airflow-SG
+
+    AirflowPostgresSG:
+        Type: AWS::EC2::SecurityGroup
+        Properties: 
+            VpcId: !Ref VPC
+            GroupDescription: Access to the Postgres
+            SecurityGroupIngress:
+                - SourceSecurityGroupId: !Ref AirflowHostSG 
+                  IpProtocol: tcp
+                  FromPort: 5432
+                  ToPort: 5432
+            Tags: 
+                - Key: Name
+                  Value: !Sub ${Environment}-airflow-postgres-SG
+
+    AirflowRedisSG:
+        Type: AWS::EC2::SecurityGroup
+        Properties: 
+            VpcId: !Ref VPC
+            GroupDescription: Access to the Redis cache
+            SecurityGroupIngress:
+                - SourceSecurityGroupId: !Ref AirflowHostSG
+                  IpProtocol: tcp
+                  FromPort: 6379
+                  ToPort: 6379
+            Tags: 
+                - Key: Name
+                  Value: !Sub ${Environment}-airflow-redis-SG
+
+Outputs:
+    AirflowHostSG: 
+        Description: A reference to the security group for airflow hosts
+        Value: !Ref AirflowHostSG
+    AirflowLoadBalancerSG:
+        Description: A reference to the security group for airflow loadbalancer
+        Value: !Ref AirflowLoadBalancerSG
+    AirflowPostgresSG:
+        Description: A reference to the security group for airflow postgres 
+        Value: !Ref AirflowPostgresSG
+    AirflowRedisSG:
+        Description: A reference to the security group for airflow redis cache
+        Value: !Ref AirflowRedisSG
+

@@ -1,0 +1,107 @@
+Description: >
+    Application load balancer
+
+Parameters:
+    VPC:
+      Description: Choose VPC the security groups should be deployed to
+      Type: AWS::EC2::VPC::Id
+    RegionCode:
+      Description: Specify a region code
+      Type: String
+    Environment:
+      Description: Specify an environment
+      Type: String
+    Subnets:
+      Description: Which subnets this load balancer should be deployed to
+      Type: List<AWS::EC2::Subnet::Id>
+    LoadBalancerSG:
+      Description: Select the security groups for the load balancer
+      Type: List<AWS::EC2::SecurityGroup::Id>
+    AppName:
+      Description: Specify a name of vertical or application
+      Type: String
+    HostedZone:
+      Description: Hosted zone
+      Type: String
+    DrainingTimeout:
+      Description: Specify a value in seconds for draining timeout
+      Type: String
+
+Resources:
+    ApplicationALB:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      Properties:
+        Name: !Sub ${RegionCode}-${Environment}-${AppName}-ALB
+        Scheme: internet-facing
+        LoadBalancerAttributes:
+          - Key: idle_timeout.timeout_seconds
+            Value: "30"
+        Subnets:
+           Ref: Subnets
+        SecurityGroups:
+            Ref: LoadBalancerSG 
+
+    ApplicationTG:
+      Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+      DependsOn: ApplicationALB
+      Properties:
+        HealthCheckIntervalSeconds: 15
+        HealthCheckPath: "/"
+        HealthCheckProtocol: HTTP
+        HealthCheckTimeoutSeconds: 5
+        HealthyThresholdCount: 3
+        Matcher:
+          HttpCode: '200,302'
+        Name: !Sub ${RegionCode}-${Environment}-${AppName}-TG
+        Port: 8080
+        Protocol: HTTP
+        UnhealthyThresholdCount: 2
+        VpcId: !Ref VPC
+        TargetGroupAttributes:
+          - Key: deregistration_delay.timeout_seconds
+            Value:
+              Ref: DrainingTimeout
+
+    HTTPListener:
+      Type: "AWS::ElasticLoadBalancingV2::Listener"
+      Properties:
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn: !Ref ApplicationTG 
+        LoadBalancerArn: !Ref ApplicationALB
+        Port: 80
+        Protocol: HTTP
+
+    HTTPListenerRule:
+      Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+      DependsOn: HTTPListener
+      Properties:
+        Actions:
+          - Type: forward
+            TargetGroupArn: !Ref ApplicationTG
+        Conditions:
+          - Field: path-pattern
+            Values:
+              - "/"
+        ListenerArn: !Ref HTTPListener
+        Priority: 1
+
+#
+# Unmark below secrion for creating public DNS record 
+#
+#    ALBDNSRecord:
+#      Type: AWS::Route53::RecordSet
+#      Properties:
+#        HostedName: !Ref HostedZone 
+#        Name: !Sub: airflow.${AWS::Region}.${HostedZone}
+#        Type: CNAME
+#        TTL: 300
+#       ResourceRecords: !GetAtt ApplicationALB.DNSName
+
+Outputs:
+    ApplicationALB:
+      Description: Private DNS name of application load balancer
+      Value: !GetAtt ApplicationALB.DNSName
+    ApplicationTG:
+      Description: A reference to application target group
+      Value: !Ref ApplicationTG
